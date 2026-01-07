@@ -8,6 +8,7 @@ WXT + Angularを使用したブラウザ拡張機能プロジェクト。Chrome/
 - **WXT**: ブラウザ拡張フレームワーク
 - **Angular 21**: UIフレームワーク（Zoneless、Standalone）
 - **@analogjs/vite-plugin-angular**: ViteでAngularをビルドするためのプラグイン
+- **Tailwind CSS v4**: ユーティリティファーストCSS（@tailwindcss/vite）
 
 ## Commands
 
@@ -53,6 +54,13 @@ WXTのファイルベースルーティング + Angularコンポーネント。
 
 Angularコードを書く際は **angular-cli MCP** を参照してベストプラクティスを確認すること。
 MCPが利用可能な場合は必ずそちらを優先し、ハードコードされたルールに依存しない。
+
+## Styling
+
+- **Tailwind CSS v4**: ユーティリティクラスでスタイリング
+- インラインスタイル（`styles`）は使わず、Tailwindクラスを使用
+- コンポーネントのホスト要素は `host: { class: '...' }` でスタイル適用
+- グローバルスタイルは `style.css` で `@import 'tailwindcss'` のみ
 
 ## WXT Conventions
 

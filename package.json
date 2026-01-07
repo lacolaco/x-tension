@@ -15,7 +15,25 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
+    "@analogjs/vite-plugin-angular": "^2.2.1",
+    "@angular/build": "^21.0.4",
+    "@angular/compiler-cli": "^21.0.6",
     "typescript": "^5.9.3",
     "wxt": "^0.20.6"
+  },
+  "dependencies": {
+    "@angular/common": "^21.0.6",
+    "@angular/compiler": "^21.0.6",
+    "@angular/core": "^21.0.6",
+    "@angular/platform-browser": "^21.0.6",
+    "rxjs": "^7.8.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ],
+    "overrides": {
+      "vite": "^7.3.0"
+    }
   }
 }

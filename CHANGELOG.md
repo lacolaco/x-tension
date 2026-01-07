@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/lacolaco/x-tension/compare/v0.1.3...v0.1.4) (2026-01-07)
+
+
+### Bug Fixes
+
+* add CI workflow with Firefox manifest validation ([#11](https://github.com/lacolaco/x-tension/issues/11)) ([2a37044](https://github.com/lacolaco/x-tension/commit/2a37044329224d64668483cae4eccbb241c9cb8a))
+
 ## [0.1.3](https://github.com/lacolaco/x-tension/compare/v0.1.2...v0.1.3) (2026-01-07)
 
 

@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
-  clickElement,
-  waitForElement,
-  delay,
-  injectTemporaryStyle,
-  findElementByText,
+  onElementAppear,
   queryAll,
   query,
 } from './dom-utils';
@@ -19,132 +15,72 @@ describe('dom-utils', () => {
     vi.restoreAllMocks();
   });
 
-  describe('clickElement', () => {
-    it('should call click on the element', async () => {
-      const element = document.createElement('button');
-      const clickSpy = vi.spyOn(element, 'click');
-
-      await clickElement(element);
-
-      expect(clickSpy).toHaveBeenCalled();
-    });
-
-    it('should resolve after default delay (100ms)', async () => {
-      const element = document.createElement('button');
-      const start = Date.now();
-
-      await clickElement(element);
-
-      const elapsed = Date.now() - start;
-      expect(elapsed).toBeGreaterThanOrEqual(90);
-    });
-
-    it('should accept custom delay', async () => {
-      const element = document.createElement('button');
-      const start = Date.now();
-
-      await clickElement(element, 50);
-
-      const elapsed = Date.now() - start;
-      expect(elapsed).toBeGreaterThanOrEqual(40);
-      expect(elapsed).toBeLessThan(100);
-    });
-  });
-
-  describe('waitForElement', () => {
-    it('should resolve immediately if element exists', async () => {
+  describe('onElementAppear', () => {
+    it('should call callback immediately if element exists', () => {
       document.body.innerHTML = '<div id="target">Target</div>';
+      const callback = vi.fn();
+      const controller = new AbortController();
 
-      const element = await waitForElement('#target');
+      onElementAppear('#target', callback, controller.signal);
 
-      expect(element).not.toBeNull();
-      expect(element?.textContent).toBe('Target');
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect((callback.mock.calls[0][0] as HTMLElement).textContent).toBe('Target');
     });
 
-    it('should resolve when element appears', async () => {
-      setTimeout(() => {
-        const div = document.createElement('div');
-        div.id = 'delayed';
-        div.textContent = 'Delayed';
-        document.body.appendChild(div);
-      }, 50);
+    it('should call callback when element appears', async () => {
+      const callback = vi.fn();
+      const controller = new AbortController();
 
-      const element = await waitForElement('#delayed', 1000);
+      onElementAppear('#delayed', callback, controller.signal, { timeout: 1000 });
 
-      expect(element).not.toBeNull();
-      expect(element?.textContent).toBe('Delayed');
+      expect(callback).not.toHaveBeenCalled();
+
+      const div = document.createElement('div');
+      div.id = 'delayed';
+      div.textContent = 'Delayed';
+      document.body.appendChild(div);
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(callback).toHaveBeenCalledTimes(1);
+      expect((callback.mock.calls[0][0] as HTMLElement).textContent).toBe('Delayed');
     });
 
-    it('should resolve with null on timeout', async () => {
-      const element = await waitForElement('#nonexistent', 100);
+    it('should not call callback on timeout', async () => {
+      const callback = vi.fn();
+      const controller = new AbortController();
 
-      expect(element).toBeNull();
+      onElementAppear('#nonexistent', callback, controller.signal, { timeout: 50 });
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      expect(callback).not.toHaveBeenCalled();
     });
 
-    it('should accept function selector', async () => {
+    it('should not call callback if signal is aborted before element appears', async () => {
+      const callback = vi.fn();
+      const controller = new AbortController();
+
+      onElementAppear('#delayed', callback, controller.signal, { timeout: 1000 });
+      controller.abort();
+
+      const div = document.createElement('div');
+      div.id = 'delayed';
+      document.body.appendChild(div);
+
+      await new Promise((r) => setTimeout(r, 50));
+
+      expect(callback).not.toHaveBeenCalled();
+    });
+
+    it('should accept function selector', () => {
       document.body.innerHTML = '<div class="target">Target</div>';
+      const callback = vi.fn();
+      const controller = new AbortController();
 
-      const element = await waitForElement(() => document.querySelector<HTMLElement>('.target'));
+      onElementAppear(() => document.querySelector<HTMLElement>('.target'), callback, controller.signal);
 
-      expect(element).not.toBeNull();
-    });
-  });
-
-  describe('delay', () => {
-    it('should resolve after specified time', async () => {
-      const start = Date.now();
-
-      await delay(50);
-
-      const elapsed = Date.now() - start;
-      expect(elapsed).toBeGreaterThanOrEqual(45);
-    });
-  });
-
-  describe('injectTemporaryStyle', () => {
-    it('should inject style with given id and css', () => {
-      const cleanup = injectTemporaryStyle('test-style', '.test { color: red; }');
-
-      const style = document.getElementById('test-style');
-      expect(style).not.toBeNull();
-      expect(style?.textContent).toBe('.test { color: red; }');
-
-      cleanup();
-    });
-
-    it('should remove style when cleanup is called', () => {
-      const cleanup = injectTemporaryStyle('test-style', '.test { color: red; }');
-
-      expect(document.getElementById('test-style')).not.toBeNull();
-
-      cleanup();
-
-      expect(document.getElementById('test-style')).toBeNull();
-    });
-  });
-
-  describe('findElementByText', () => {
-    it('should find element matching selector and text pattern', () => {
-      const container = document.createElement('div');
-      container.innerHTML = `
-        <div class="item">Apple</div>
-        <div class="item">Banana</div>
-        <div class="item">Cherry</div>
-      `;
-
-      const element = findElementByText(container, '.item', /banana/i);
-
-      expect(element).not.toBeNull();
-      expect(element?.textContent).toBe('Banana');
-    });
-
-    it('should return null if no match found', () => {
-      const container = document.createElement('div');
-      container.innerHTML = '<div class="item">Apple</div>';
-
-      const element = findElementByText(container, '.item', /grape/i);
-
-      expect(element).toBeNull();
+      expect(callback).toHaveBeenCalledTimes(1);
     });
   });
 

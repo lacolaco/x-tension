@@ -67,3 +67,30 @@ MCPが利用可能な場合は必ずそちらを優先し、ハードコード�
 - `defineBackground()`, `defineContentScript()` はWXTが自動インポートするグローバル関数
 - `browser` APIはWXTが提供するクロスブラウザ互換ラッパー
 - パスエイリアス: `@/` = プロジェクトルート
+
+## Implementation Principles
+
+### Order-Dependent Code Verification
+**Apply when**: Writing initialization, resource acquisition, or async code with order dependencies
+- Write intended order as comments FIRST
+- After implementation, verify comments match actual execution order
+- If you cannot explain WHY "A→B→C" order is required, reconsider the design
+
+### Selector Scope Minimization
+**Apply when**: Designing DOM selectors or pattern matching
+- Ask: "Could this selector match unintended elements?"
+- Prefer narrow selectors over broad selector + filtering
+- When using MutationObserver, leverage detection timing to narrow scope
+
+### Continuous vs One-shot Observation
+**Apply when**: Designing DOM observation or event subscriptions
+- Ask: "Can this element/event recur?"
+- If recurring: disable timeout (or set very long), use once: false
+- If one-shot: use once: true with appropriate timeout
+- Verify cleanup can undo ALL side effects that occurred during observation
+
+### Explicit Environment Tracking
+**Apply when**: User mentions target environment (browser, OS, runtime)
+- Record target environment explicitly in todo or notes
+- Verify environment before running build/test commands
+- Never rely on "default environment" assumptions

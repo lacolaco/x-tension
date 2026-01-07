@@ -20,6 +20,9 @@ export default defineConfig(
     plugins: {
       '@typescript-eslint': tseslint.plugin,
     },
+    linterOptions: {
+      noInlineConfig: true
+    }
   },
   {
     files: ['**/*.ts'],

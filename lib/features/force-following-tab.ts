@@ -5,58 +5,23 @@
  * Also hides the "For You" tab to prevent accidental switching.
  */
 
-import { clickElement, waitForElement, delay, injectTemporaryStyle, query, queryAll } from '../dom-utils';
+import type { Observable } from 'rxjs';
+import { onElementAppear, injectStyle, queryAll } from '../dom-utils';
 import { Selectors, TextPatterns } from '../x-com/selectors';
 
 // =============================================================================
 // Constants
 // =============================================================================
 
-/**
- * Timing constants for UI interactions.
- * These values are empirically determined based on x.com's React rendering behavior.
- */
 const Timing = {
-  /** Wait for tab switch animation to complete */
-  TAB_SWITCH_DELAY: 300,
-  /** Wait for tablist to appear on initial load */
-  TABLIST_TIMEOUT: 10000,
-  /** Wait for sort menu to appear after click */
+  // Tabs appear within 5s on average; 10s covers slow networks
+  TAB_TIMEOUT: 10000,
+  // Menus appear within 100ms typically; 2s is generous buffer
   MENU_TIMEOUT: 2000,
-  /** Initial delay to ensure tabs are fully rendered */
-  INITIAL_RENDER_DELAY: 500,
 } as const;
 
 // =============================================================================
-// DOM Query Functions (x.com-specific)
-// =============================================================================
-
-export function findTabs(): HTMLElement[] {
-  return queryAll(document, Selectors.tab);
-}
-
-export function findActiveTab(): HTMLElement | null {
-  return query(document, Selectors.activeTab);
-}
-
-export function findFollowingTab(): HTMLElement | null {
-  return query(document, Selectors.followingTab);
-}
-
-export function findSortMenu(): HTMLElement | null {
-  return query(document, Selectors.menu);
-}
-
-export function findMenuItems(menu: HTMLElement): HTMLElement[] {
-  return queryAll(menu, Selectors.menuItem);
-}
-
-export function findLatestOption(menu: HTMLElement): HTMLElement | null {
-  return findMenuItems(menu).find((item) => TextPatterns.latest.test(item.textContent || '')) ?? null;
-}
-
-// =============================================================================
-// Tab Identification
+// Tab Identification (exported for tests)
 // =============================================================================
 
 export function isFollowingTab(tab: HTMLElement): boolean {
@@ -68,156 +33,106 @@ export function isForYouTab(tab: HTMLElement): boolean {
 }
 
 // =============================================================================
-// DOM Manipulation (x.com-specific)
-// =============================================================================
-
-export function hideForYouTab(): void {
-  const forYouTab = findTabs().find(isForYouTab);
-  if (forYouTab) {
-    forYouTab.style.display = 'none';
-  }
-}
-
-export function closeMenu(): void {
-  const target = query(document, Selectors.primaryColumn) ?? query(document, Selectors.header);
-  target?.click();
-}
-
-export function hideMenuTemporarily(): () => void {
-  return injectTemporaryStyle(
-    'x-tension-hide-menu',
-    `${Selectors.menu} { opacity: 0 !important; pointer-events: none !important; }`,
-  );
-}
-
-// =============================================================================
 // Core Logic
 // =============================================================================
 
-async function switchToFollowingTab(): Promise<boolean> {
-  const activeTab = findActiveTab();
-  if (activeTab && isFollowingTab(activeTab)) {
-    return true;
-  }
-
-  const followingTab = findFollowingTab();
-  if (!followingTab) {
-    return false;
-  }
-
-  await clickElement(followingTab);
-  await delay(Timing.TAB_SWITCH_DELAY);
-  return true;
+function findFollowingTab(): HTMLElement | null {
+  const tabs = queryAll(document, Selectors.tab);
+  return tabs.find(isFollowingTab) ?? null;
 }
 
-async function openSortMenu(followingTab: HTMLElement): Promise<HTMLElement | null> {
-  const existing = findSortMenu();
-  if (existing) {
-    return existing;
-  }
-  await clickElement(followingTab);
-  return waitForElement(Selectors.menu, Timing.MENU_TIMEOUT);
+function findForYouTab(): HTMLElement | null {
+  const tabs = queryAll(document, Selectors.tab);
+  return tabs.find(isForYouTab) ?? null;
 }
 
-async function selectLatestSort(): Promise<void> {
-  const followingTab = findFollowingTab();
-  if (!followingTab) return;
+/**
+ * Click Following tab and select "Latest" from the dropdown menu.
+ * Menu stays hidden permanently (user won't manually change sort order).
+ */
+function selectLatestFromMenu(followingTab: HTMLElement, signal: AbortSignal): void {
+  // Hide menu permanently - no cleanup needed
+  injectStyle(
+    'x-tension-hide-menu',
+    `${Selectors.menu} { opacity: 0 !important; pointer-events: none !important; }`,
+  );
 
-  const showMenu = hideMenuTemporarily();
+  followingTab.click();
 
-  try {
-    const sortMenu = await openSortMenu(followingTab);
-    if (!sortMenu) {
-      return;
-    }
-
-    const latestOption = findLatestOption(sortMenu);
-    if (latestOption) {
-      await clickElement(latestOption);
-    } else {
-      closeMenu();
-    }
-  } finally {
-    showMenu();
-  }
+  // MutationObserver catches newly appeared menu (scoped by timing after click)
+  onElementAppear(
+    Selectors.menu,
+    (menu) => {
+      const menuItems = queryAll(menu, Selectors.menuItem);
+      const latestOption = menuItems.find((item) => TextPatterns.latest.test(item.textContent || ''));
+      if (!latestOption) {
+        console.warn('[x-tension] Latest option not found in menu');
+        return;
+      }
+      latestOption.click();
+    },
+    signal,
+    { timeout: Timing.MENU_TIMEOUT, once: true },
+  );
 }
 
-async function ensureFollowingLatest(): Promise<void> {
-  hideForYouTab();
-
-  const switched = await switchToFollowingTab();
-  if (!switched) return;
-
-  await selectLatestSort();
+function activateFollowingTab(signal: AbortSignal): void {
+  onElementAppear(
+    findFollowingTab,
+    (followingTab) => {
+      selectLatestFromMenu(followingTab, signal);
+    },
+    signal,
+    { timeout: Timing.TAB_TIMEOUT, once: true },
+  );
 }
 
-// =============================================================================
-// Tab Change Observer
-// =============================================================================
-
-function watchTabChanges(tabList: HTMLElement, callback: () => Promise<void>): () => void {
-  const observer = new MutationObserver((mutations) => {
-    const hasTabChange = mutations.some(
-      (m) => m.attributeName === 'aria-selected' && (m.target as HTMLElement).getAttribute('role') === 'tab',
-    );
-    if (hasTabChange) {
-      callback().catch((err: unknown) => {
-        console.error('Tab change handler failed:', err);
-      });
-    }
-  });
-
-  observer.observe(tabList, {
-    attributes: true,
-    attributeFilter: ['aria-selected'],
-    subtree: true,
-  });
-
-  return () => { observer.disconnect(); };
+/**
+ * Continuously hide "For You" tab.
+ * Uses timeout: 0 for indefinite monitoring because tab can be re-rendered by SPA.
+ */
+function hideForYouTab(signal: AbortSignal): void {
+  onElementAppear(
+    findForYouTab,
+    (forYouTab) => {
+      // Hide the wrapper element (not just tab) to avoid empty space
+      const wrapper = forYouTab.parentElement?.closest<HTMLElement>(Selectors.tabWrapper);
+      const target = wrapper ?? forYouTab;
+      target.style.display = 'none';
+    },
+    signal,
+    { timeout: 0 },
+  );
 }
 
 // =============================================================================
 // Entry Point
 // =============================================================================
 
-async function applyForceFollowingLatest(): Promise<(() => void) | null> {
-  const tabList = await waitForElement(Selectors.tabList, Timing.TABLIST_TIMEOUT);
-  if (!tabList) {
-    return null;
-  }
-
-  await delay(Timing.INITIAL_RENDER_DELAY);
-  await ensureFollowingLatest();
-
-  return watchTabChanges(tabList, () => ensureFollowingLatest());
-}
-
-const MARKER_ATTR = 'data-x-tension-force-following';
-
 /**
- * Initialize the force-following-tab feature.
- * Uses DOM marker to prevent duplicate initialization.
- * Cleanup is handled by page reload when settings change.
+ * Initialize force-following-tab feature.
+ * Subscribes to navigation events and applies the feature on /home.
  */
-export function initForceFollowingTab(): void {
-  const setup = () => {
-    if (document.body.hasAttribute(MARKER_ATTR)) {
+export function initForceFollowingTab(navigation$: Observable<string>): () => void {
+  let abortController: AbortController | null = null;
+
+  const subscription = navigation$.subscribe((pathname) => {
+    // Abort previous operations on any navigation
+    abortController?.abort();
+
+    if (pathname !== '/home') {
+      abortController = null;
       return;
     }
-    document.body.setAttribute(MARKER_ATTR, '');
 
-    applyForceFollowingLatest().catch((err: unknown) => {
-      console.error('Failed to apply force following:', err);
-    });
-  };
-
-  if (location.pathname === '/home') {
-    setup();
-  }
-
-  window.addEventListener('popstate', () => {
-    if (location.pathname === '/home') {
-      setup();
-    }
+    // Start new operations for /home
+    abortController = new AbortController();
+    hideForYouTab(abortController.signal); // Continuous monitoring
+    activateFollowingTab(abortController.signal); // One-shot activation
   });
+
+  return () => {
+    abortController?.abort();
+    subscription.unsubscribe();
+  };
 }

@@ -7,8 +7,8 @@
 export const Selectors = {
   tab: '[role="tab"]',
   activeTab: '[role="tab"][aria-selected="true"]',
-  followingTab: '[role="tab"][aria-haspopup="menu"]',
   tabList: '[role="tablist"]',
+  tabWrapper: '[role="presentation"]',
   menu: '[role="menu"]',
   menuItem: '[role="menuitem"]',
   primaryColumn: '[data-testid="primaryColumn"]',

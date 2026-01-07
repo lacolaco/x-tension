@@ -5,69 +5,74 @@
  */
 
 /**
- * Simulate a click on an element with a small delay.
+ * Watch for an element to appear in the DOM using MutationObserver.
+ * Calls callback when element appears. With once=true, stops after first match.
  */
-export function clickElement(element: HTMLElement, delayMs = 100): Promise<void> {
-  return new Promise((resolve) => {
-    element.click();
-    setTimeout(resolve, delayMs);
-  });
-}
-
-/**
- * Wait for an element to appear in the DOM.
- */
-export function waitForElement<T extends HTMLElement>(
+export function onElementAppear<T extends HTMLElement>(
   selector: string | (() => T | null),
-  timeout = 5000,
-): Promise<T | null> {
-  return new Promise((resolve) => {
-    const startTime = Date.now();
-    const check = () => {
-      const element = typeof selector === 'string' ? document.querySelector<T>(selector) : selector();
-      if (element) {
-        resolve(element);
-        return;
-      }
-      if (Date.now() - startTime > timeout) {
-        resolve(null);
-        return;
-      }
-      requestAnimationFrame(check);
-    };
-    check();
+  callback: (element: T) => void,
+  signal: AbortSignal,
+  options: { timeout?: number; once?: boolean } = {},
+): void {
+  const { timeout = 5000, once = false } = options;
+
+  if (signal.aborted) return;
+
+  const find = () => (typeof selector === 'string' ? document.querySelector<T>(selector) : selector());
+  // Prevent duplicate notifications for same element instance (defense against race conditions)
+  const seen = new WeakSet<T>();
+  let done = false;
+
+  function finish() {
+    if (done) return;
+    done = true;
+    if (timerId !== undefined) clearTimeout(timerId);
+    observer.disconnect();
+    signal.removeEventListener('abort', finish);
+  }
+
+  function notify(element: T) {
+    if (done || seen.has(element)) return;
+    seen.add(element);
+    try {
+      callback(element);
+    } catch (error) {
+      console.error('[x-tension] onElementAppear callback failed:', error);
+    }
+    if (once) finish();
+  }
+
+  const observer = new MutationObserver(() => {
+    const element = find();
+    if (element) notify(element);
   });
+
+  // timeout=0 disables timeout (monitor until abort)
+  const timerId = timeout > 0 ? setTimeout(finish, timeout) : undefined;
+  signal.addEventListener('abort', finish, { once: true });
+
+  // Order matters: check existing → notify → start observer
+  // This ensures we don't miss elements that exist before observer starts,
+  // and WeakSet prevents duplicate notifications if observer fires for same element
+  const existing = find();
+  if (existing) notify(existing);
+  observer.observe(document.body, { childList: true, subtree: true });
 }
 
 /**
- * Create a promise that resolves after a delay.
+ * Inject a style into the document head.
+ * Returns the style element for later removal if needed.
  */
-export function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Temporarily inject a style and return a cleanup function.
- */
-export function injectTemporaryStyle(id: string, css: string): () => void {
+export function injectStyle(id: string, css: string): HTMLStyleElement {
+  const existing = document.getElementById(id) as HTMLStyleElement | null;
+  if (existing?.isConnected) {
+    return existing;
+  }
   const style = document.createElement('style');
   style.id = id;
   style.textContent = css;
   document.head.appendChild(style);
-  return () => { style.remove(); };
-}
-
-/**
- * Find elements matching a selector and filter by text content.
- */
-export function findElementByText(
-  base: ParentNode,
-  selector: string,
-  pattern: RegExp,
-): HTMLElement | null {
-  const elements = Array.from(base.querySelectorAll<HTMLElement>(selector));
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- textContent can be null for some node types
-  return elements.find((el) => pattern.test(el.textContent ?? '')) ?? null;
+  return style;
 }
 
 /**
@@ -83,3 +88,4 @@ export function queryAll(base: ParentNode, selector: string): HTMLElement[] {
 export function query(base: ParentNode, selector: string): HTMLElement | null {
   return base.querySelector<HTMLElement>(selector);
 }
+

@@ -7,7 +7,7 @@ export default defineConfig({
   manifest: {
     name: 'x-tension',
     description: 'Enhance your x.com experience',
-    permissions: ['storage'],
+    permissions: ['storage', 'webNavigation'],
     browser_specific_settings: {
       gecko: {
         id: '{1557cd86-ae55-4b95-9a18-0af1aed65684}',

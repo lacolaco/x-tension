@@ -1,43 +1,47 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, linkedSignal, resource } from '@angular/core';
+import { getFeatureFlags, setFeatureFlags } from '../../lib/storage';
 
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'block max-w-5xl mx-auto p-8 text-center' },
+  host: { class: 'block w-80 p-4' },
   template: `
-    <div>
-      <a href="https://wxt.dev" target="_blank">
-        <img
-          src="/wxt.svg"
-          class="inline-block h-24 p-6 transition-[filter] duration-300 hover:drop-shadow-[0_0_2em_#646cffaa]"
-          alt="WXT logo"
-        />
-      </a>
-      <a href="https://angular.dev" target="_blank">
-        <img
-          src="/icon/128.png"
-          class="inline-block h-24 p-6 transition-[filter] duration-300 hover:drop-shadow-[0_0_2em_#dd0031aa]"
-          alt="Angular logo"
-        />
-      </a>
-      <h1 class="text-5xl leading-tight">WXT + Angular</h1>
-      <div class="p-8">
-        <button
-          type="button"
-          class="rounded-lg border border-transparent bg-neutral-800 px-5 py-2.5 text-base font-medium text-white cursor-pointer transition-colors hover:border-indigo-400 focus:outline-4 focus:outline-auto"
-          (click)="increment()"
-        >
-          count is {{ count() }}
-        </button>
+    <div class="space-y-4">
+      <h1 class="text-lg font-bold text-gray-100">x-tension</h1>
+
+      <div class="space-y-3">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            class="w-4 h-4 accent-blue-500"
+            [checked]="forceFollowingLatest()"
+            (change)="toggleForceFollowingLatest()"
+          />
+          <span class="text-sm text-gray-200">フォロー中（最新）に固定</span>
+        </label>
       </div>
-      <p class="text-gray-500">Click on the WXT and Angular logos to learn more</p>
+
+      <p class="text-xs text-gray-500">
+        設定変更後、x.comのページを再読み込みしてください
+      </p>
     </div>
   `,
 })
 export class AppComponent {
-  count = signal(0);
+  private readonly flagsResource = resource({
+    loader: () => getFeatureFlags(),
+  });
 
-  increment() {
-    this.count.update(c => c + 1);
+  readonly forceFollowingLatest = linkedSignal(() => this.flagsResource.value()?.forceFollowingLatest ?? true);
+
+  toggleForceFollowingLatest(): void {
+    const newValue = !this.forceFollowingLatest();
+    this.forceFollowingLatest.set(newValue);
+
+    setFeatureFlags({ forceFollowingLatest: newValue }).catch((err: unknown) => {
+      console.error('Failed to save settings:', err);
+      // Revert UI state on error
+      this.forceFollowingLatest.set(!newValue);
+    });
   }
 }

@@ -18,6 +18,8 @@
     "@analogjs/vite-plugin-angular": "^2.2.1",
     "@angular/build": "^21.0.4",
     "@angular/compiler-cli": "^21.0.6",
+    "@tailwindcss/vite": "^4.1.18",
+    "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
     "wxt": "^0.20.6"
   },

@@ -5,4 +5,4 @@ import { AppComponent } from './app.component';
 
 bootstrapApplication(AppComponent, {
   providers: [provideZonelessChangeDetection()],
-}).catch((err) => console.error(err));
+}).catch((err: unknown) => { console.error(err); });

@@ -4,6 +4,11 @@ import tailwindcss from '@tailwindcss/vite';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  manifest: {
+    name: 'x-tension',
+    description: 'Enhance your x.com experience',
+    permissions: ['storage'],
+  },
   vite: () => ({
     resolve: {
       mainFields: ['module'],
@@ -11,6 +16,10 @@ export default defineConfig({
     plugins: [
       angular({
         tsconfig: 'tsconfig.app.json',
+        // Only transform files in the popup directory
+        transformFilter: (_code: string, id: string) => {
+          return id.includes('/entrypoints/popup/');
+        },
       }),
       tailwindcss(),
     ],

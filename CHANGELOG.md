@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/lacolaco/x-tension/compare/v0.1.2...v0.1.3) (2026-01-07)
+
+
+### Bug Fixes
+
+* enrich extension metadata ([03f8227](https://github.com/lacolaco/x-tension/commit/03f8227b3411e8531b72b647f4a087f52f3acc3d))
+
 ## [0.1.2](https://github.com/lacolaco/x-tension/compare/v0.1.1...v0.1.2) (2026-01-07)
 
 

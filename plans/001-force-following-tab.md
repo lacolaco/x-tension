@@ -154,19 +154,99 @@ interface FeatureFlags {
 }
 ```
 
+### トリガー条件
+
+x.comはSPAのため、複数のトリガーで機能を発火させる必要がある：
+
+| トリガー | 検出方法 | 用途 |
+|---|---|---|
+| 初回ロード | Content Script実行時 | ページ直接アクセス |
+| SPA遷移 | `popstate` + URL監視 | 他ページから/homeへ遷移 |
+| History API | `pushState`/`replaceState` のラップ | SPA内ナビゲーション |
+| タブ状態変更 | MutationObserver | x.comによる勝手なタブ切り替え |
+
+#### URL監視の実装
+```typescript
+// SPAナビゲーション検出
+let lastUrl = location.href;
+
+// popstate（ブラウザの戻る/進む）
+window.addEventListener('popstate', () => {
+  if (location.pathname === '/home') {
+    applyForceFollowingLatest();
+  }
+});
+
+// History API のラップ（pushState/replaceState）
+const originalPushState = history.pushState.bind(history);
+const originalReplaceState = history.replaceState.bind(history);
+
+history.pushState = (...args) => {
+  originalPushState(...args);
+  onUrlChange();
+};
+
+history.replaceState = (...args) => {
+  originalReplaceState(...args);
+  onUrlChange();
+};
+
+function onUrlChange(): void {
+  if (location.href !== lastUrl) {
+    lastUrl = location.href;
+    if (location.pathname === '/home') {
+      applyForceFollowingLatest();
+    }
+  }
+}
+```
+
+#### タブ状態の継続監視
+```typescript
+// MutationObserverでタブの選択状態を監視
+// x.comがタブを勝手に切り替えた場合に再適用
+function watchTabChanges(): void {
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.attributeName === 'aria-selected') {
+        const target = mutation.target as HTMLElement;
+        if (target.getAttribute('role') === 'tab') {
+          // タブ選択が変更された → 再チェック
+          ensureFollowingLatest();
+        }
+      }
+    }
+  });
+
+  // タブリスト全体を監視
+  const tabList = document.querySelector('[role="tablist"]');
+  if (tabList) {
+    observer.observe(tabList, {
+      attributes: true,
+      attributeFilter: ['aria-selected'],
+      subtree: true,
+    });
+  }
+}
+```
+
 ### 処理フロー
 ```
-1. /home ページ検出
-2. MutationObserver でタブUI出現を監視
-3. Step 0: 「おすすめ」タブをCSSで非表示
-4. Step 1: 「フォロー中」タブがアクティブか確認
+1. Content Script 実行
+2. URL が /home か確認
+   - No → URL監視のみセットアップして待機
+   - Yes → Step 3へ
+3. MutationObserver でタブUI出現を監視
+4. Step 0: 「おすすめ」タブを非表示
+5. Step 1: 「フォロー中」タブがアクティブか確認
    - No → クリックして切り替え、Step 2へ
    - Yes → Step 2へ
-5. Step 2: ソートオプションUIを探索
+6. Step 2: ソートオプションUIを探索
    - 「最新」が選択されているか確認
    - No → ソートメニューを開いて「最新」を選択
    - Yes → 完了
-6. ページ内ナビゲーション時は再実行
+7. タブ状態の継続監視を開始（x.comによる切り替え対策）
+8. SPA遷移時は Step 2 から再実行
 ```
 
 ### DOM セレクタ戦略（実機検証済み: 2025-01）

@@ -169,9 +169,26 @@ interface FeatureFlags {
 6. ページ内ナビゲーション時は再実行
 ```
 
-### DOM セレクタ戦略（セマンティック優先）
+### DOM セレクタ戦略（実機検証済み: 2025-01）
+
+#### タブ構造
+```
+[role="tab"] × 3
+├── [0] おすすめ (aria-selected, aria-haspopup=null)
+├── [1] フォロー中 (aria-selected, aria-haspopup="menu") ← ソートメニュー付き
+└── [2] コミュニティ (aria-selected, aria-haspopup=null)
+```
+
+#### ソートメニュー構造
+```
+[role="menu"]
+├── [role="menuitem"] 人気 (SVGなし = 未選択)
+└── [role="menuitem"] 最新 (SVGあり = 選択中)
+```
+
+#### 実装コード
 ```typescript
-// タブの特定: role="tab" + aria-selected で状態判定
+// タブの特定
 function findTabs(): HTMLElement[] {
   return Array.from(document.querySelectorAll('[role="tab"]'));
 }
@@ -180,59 +197,88 @@ function findActiveTab(): HTMLElement | null {
   return document.querySelector('[role="tab"][aria-selected="true"]');
 }
 
-// タブの識別: aria-label または内部テキストで判定
+// タブの識別: textContent で判定（aria-label は null）
 function isFollowingTab(tab: HTMLElement): boolean {
-  const label = tab.getAttribute('aria-label') || tab.textContent || '';
-  return /following|フォロー中/i.test(label);
+  const text = tab.textContent || '';
+  return /following|フォロー中/i.test(text);
 }
 
 function isForYouTab(tab: HTMLElement): boolean {
-  const label = tab.getAttribute('aria-label') || tab.textContent || '';
-  return /for you|おすすめ/i.test(label);
+  const text = tab.textContent || '';
+  return /for you|おすすめ/i.test(text);
 }
 
-// ソートオプション: role="menu" + role="menuitem"
+// フォロー中タブは aria-haspopup="menu" を持つ
+function findFollowingTab(): HTMLElement | null {
+  return document.querySelector('[role="tab"][aria-haspopup="menu"]');
+}
+
+// ソートメニュー
 function findSortMenu(): HTMLElement | null {
   return document.querySelector('[role="menu"]');
 }
 
+function findMenuItems(menu: HTMLElement): HTMLElement[] {
+  return Array.from(menu.querySelectorAll('[role="menuitem"]'));
+}
+
+// 選択状態: SVG要素の有無で判定
+function isMenuItemSelected(item: HTMLElement): boolean {
+  return item.querySelector('svg') !== null;
+}
+
 function findLatestOption(menu: HTMLElement): HTMLElement | null {
-  const items = menu.querySelectorAll('[role="menuitem"], [role="menuitemradio"]');
-  return Array.from(items).find(item => {
-    const text = item.getAttribute('aria-label') || item.textContent || '';
+  const items = findMenuItems(menu);
+  return items.find(item => {
+    const text = item.textContent || '';
     return /latest|最新/i.test(text);
-  }) as HTMLElement | null;
+  }) || null;
+}
+
+function isLatestSelected(menu: HTMLElement): boolean {
+  const latest = findLatestOption(menu);
+  return latest ? isMenuItemSelected(latest) : false;
 }
 ```
 
 ### CSS注入（おすすめタブ非表示）
 ```typescript
-function hideForYouTab(): void {
+function injectStyles(): void {
   const style = document.createElement('style');
-  style.id = 'x-tension-hide-foryou';
+  style.id = 'x-tension-styles';
   style.textContent = `
-    /* role="tab" で aria-label が "For you" または "おすすめ" を含むものを非表示 */
-    [role="tab"][aria-label*="For you"],
-    [role="tab"][aria-label*="おすすめ"] {
-      display: none !important;
-    }
+    /* おすすめタブを非表示（textContentベースなのでCSS単独では不可、JSで対応） */
   `;
   document.head.appendChild(style);
+}
+
+// JSでおすすめタブを非表示
+function hideForYouTab(): void {
+  const tabs = findTabs();
+  const forYouTab = tabs.find(isForYouTab);
+  if (forYouTab) {
+    forYouTab.style.display = 'none';
+  }
 }
 ```
 
 ### 注意点
-- x.comのUIは頻繁に変更されるため、セレクタは柔軟に対応できるよう設計
-- `aria-label` が存在しない場合は `textContent` にフォールバック
+- `aria-label` は全タブで `null` → `textContent` で識別
+- フォロー中タブのみ `aria-haspopup="menu"` を持つ（識別に利用可能）
+- ソートメニューの選択状態は **SVG要素（チェックマーク）の有無** で判定
+- メニューを開くにはフォロー中タブをクリック（`aria-expanded` が切り替わる）
 - 多言語対応（英語/日本語）を考慮したパターンマッチング
-- ソートオプションUIの表示タイミングはタブ切り替え後に遅延がある可能性
 
 ## 次のステップ
 
-1. 実機でx.comのDOM構造を検証し、セレクタの動作確認
+1. ~~実機でx.comのDOM構造を検証し、セレクタの動作確認~~ ✅ 完了
 2. 実装開始
 
 ## 決定事項
 
 - [x] 採用する実装案: **案A + おすすめタブ非表示**
 - [x] DOM参照方針: **セマンティック/アクセシビリティ属性優先**
+- [x] DOM構造検証: **2025-01 実機確認済み**
+  - タブ識別: `textContent` ベース（`aria-label` は null）
+  - フォロー中タブ: `aria-haspopup="menu"` で識別可能
+  - ソート選択状態: `svg` 要素の有無で判定

@@ -8,6 +8,11 @@ export default defineConfig({
     name: 'x-tension',
     description: 'Enhance your x.com experience',
     permissions: ['storage'],
+    browser_specific_settings: {
+      gecko: {
+        id: '{1557cd86-ae55-4b95-9a18-0af1aed65684}',
+      },
+    },
   },
   vite: () => ({
     resolve: {

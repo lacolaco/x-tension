@@ -23,6 +23,9 @@ importers:
       '@angular/platform-browser':
         specifier: ^21.0.6
         version: 21.0.6(@angular/common@21.0.6(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2))(rxjs@7.8.2))(@angular/core@21.0.6(@angular/compiler@21.0.6)(rxjs@7.8.2))
+      element-ready:
+        specifier: ^9.0.1
+        version: 9.0.1
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
@@ -2383,6 +2386,10 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
+  dom-mutations@1.0.2:
+    resolution: {integrity: sha512-gYhPPcSRbfMMl88YQecZiQErgKrz1X/umKf/cuJcnl6zMvMqaThNS37WVQ0MlpDXLQqj/LGKD6ucwpcONGTdGw==}
+    engines: {node: '>=18'}
+
   dom-serializer@2.0.0:
     resolution: {integrity: sha512-wIkAryiqt/nV5EQKqQpo3SToSOV9J0DnbJqwK7Wv/Trc92zIAYZ4FlMu+JPFW1DfGFt81ZTCGgDEabffXeLyJg==}
 
@@ -2425,6 +2432,10 @@ packages:
 
   electron-to-chromium@1.5.267:
     resolution: {integrity: sha512-0Drusm6MVRXSOJpGbaSVgcQsuB4hEkMpHXaVstcPmhu5LIedxs1xNK/nIxmQIU/RPC0+1/o0AVZfBTkTNJOdUw==}
+
+  element-ready@9.0.1:
+    resolution: {integrity: sha512-znZF0XllYAsPoe27ccTUc1l6gDV0PVUGRtfjDxqY563oihzt/lwEJLXP4HbQyYoec8hSHPLb1lDDJ8E6oUzKJA==}
+    engines: {node: '>=20'}
 
   emoji-regex@10.6.0:
     resolution: {integrity: sha512-toUI84YS5YmxW219erniWD0CIVOo46xGKColeNQRgOzDorgBi1v4D71/OFzgD9GO2UGKIv1C3Sp8DAn0+j5w7A==}
@@ -3837,6 +3848,10 @@ packages:
     resolution: {integrity: sha512-+crtS5QjFRqFCoQmvGduwYWEBng99ZvmFvF+cUJkGYF1L1BfU8C6Zp9T7f5vPAwyLkUExpvK+ANVZmGU49qi4Q==}
     engines: {node: '>=12'}
 
+  request-animation-frames@1.0.0:
+    resolution: {integrity: sha512-THOhYcI5OUY9M6IsmxW24/IItGwEUncfujiqwVF3DYxSxuEfrv1Z74KQfwAcH0zcGgzI5hgHtJEslPPhdRrJ5w==}
+    engines: {node: '>=18'}
+
   require-directory@2.1.1:
     resolution: {integrity: sha512-fGxEI7+wsG9xrvdjsrlmL22OMTTiHRwAMroiEeMgq8gzoLC/PQr7RsRDSTLUg/bZAZtF+TVIkHc6/4RIKrui+Q==}
     engines: {node: '>=0.10.0'}
@@ -4232,6 +4247,9 @@ packages:
   type-is@2.0.1:
     resolution: {integrity: sha512-OZs6gsjF4vMp32qrCbiVSkrFmXtG/AZhY3t0iAMrMBiAZyV9oALtXO8hsrHbMXF9x6L3grlFuwW2oAz7cav+Gw==}
     engines: {node: '>= 0.6'}
+
+  typed-query-selector@2.12.0:
+    resolution: {integrity: sha512-SbklCd1F0EiZOyPiW192rrHZzZ5sBijB6xM+cpmrwDqObvdtunOHHIk9fCGsoK5JVIYXoyEp4iEdE3upFH3PAg==}
 
   typedarray@0.0.6:
     resolution: {integrity: sha512-/aCDEGatGvZ2BIk+HmLf4ifCJFwvKFNb9/JeZPMulfgFracn9QFcAf5GO8B/mweUjSoblS5In0cWhqpfs/5PQA==}
@@ -6802,6 +6820,8 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
+  dom-mutations@1.0.2: {}
+
   dom-serializer@2.0.0:
     dependencies:
       domelementtype: 2.3.0
@@ -6848,6 +6868,12 @@ snapshots:
   ee-first@1.1.1: {}
 
   electron-to-chromium@1.5.267: {}
+
+  element-ready@9.0.1:
+    dependencies:
+      dom-mutations: 1.0.2
+      request-animation-frames: 1.0.0
+      typed-query-selector: 2.12.0
 
   emoji-regex@10.6.0: {}
 
@@ -8417,6 +8443,8 @@ snapshots:
     dependencies:
       rc: 1.2.8
 
+  request-animation-frames@1.0.0: {}
+
   require-directory@2.1.1: {}
 
   require-from-string@2.0.2: {}
@@ -8856,6 +8884,8 @@ snapshots:
       content-type: 1.0.5
       media-typer: 1.1.0
       mime-types: 3.0.2
+
+  typed-query-selector@2.12.0: {}
 
   typedarray@0.0.6: {}
 

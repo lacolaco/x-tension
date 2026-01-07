@@ -1,87 +1,10 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import {
-  onElementAppear,
-  queryAll,
-  query,
-} from './dom-utils';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { queryAll, query, waitForElement, observeElements } from './dom-utils';
 
 describe('dom-utils', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
     document.head.innerHTML = '';
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  describe('onElementAppear', () => {
-    it('should call callback immediately if element exists', () => {
-      document.body.innerHTML = '<div id="target">Target</div>';
-      const callback = vi.fn();
-      const controller = new AbortController();
-
-      onElementAppear('#target', callback, controller.signal);
-
-      expect(callback).toHaveBeenCalledTimes(1);
-      expect((callback.mock.calls[0][0] as HTMLElement).textContent).toBe('Target');
-    });
-
-    it('should call callback when element appears', async () => {
-      const callback = vi.fn();
-      const controller = new AbortController();
-
-      onElementAppear('#delayed', callback, controller.signal, { timeout: 1000 });
-
-      expect(callback).not.toHaveBeenCalled();
-
-      const div = document.createElement('div');
-      div.id = 'delayed';
-      div.textContent = 'Delayed';
-      document.body.appendChild(div);
-
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(callback).toHaveBeenCalledTimes(1);
-      expect((callback.mock.calls[0][0] as HTMLElement).textContent).toBe('Delayed');
-    });
-
-    it('should not call callback on timeout', async () => {
-      const callback = vi.fn();
-      const controller = new AbortController();
-
-      onElementAppear('#nonexistent', callback, controller.signal, { timeout: 50 });
-
-      await new Promise((r) => setTimeout(r, 100));
-
-      expect(callback).not.toHaveBeenCalled();
-    });
-
-    it('should not call callback if signal is aborted before element appears', async () => {
-      const callback = vi.fn();
-      const controller = new AbortController();
-
-      onElementAppear('#delayed', callback, controller.signal, { timeout: 1000 });
-      controller.abort();
-
-      const div = document.createElement('div');
-      div.id = 'delayed';
-      document.body.appendChild(div);
-
-      await new Promise((r) => setTimeout(r, 50));
-
-      expect(callback).not.toHaveBeenCalled();
-    });
-
-    it('should accept function selector', () => {
-      document.body.innerHTML = '<div class="target">Target</div>';
-      const callback = vi.fn();
-      const controller = new AbortController();
-
-      onElementAppear(() => document.querySelector<HTMLElement>('.target'), callback, controller.signal);
-
-      expect(callback).toHaveBeenCalledTimes(1);
-    });
   });
 
   describe('queryAll', () => {
@@ -129,6 +52,49 @@ describe('dom-utils', () => {
       const element = query(container, '.nonexistent');
 
       expect(element).toBeNull();
+    });
+  });
+
+  describe('waitForElement', () => {
+    it('should find existing element immediately', async () => {
+      document.body.innerHTML = '<div class="target">Found</div>';
+
+      const element = await waitForElement('.target');
+
+      expect(element).not.toBeNull();
+      expect(element?.textContent).toBe('Found');
+    });
+
+    it('should return null when aborted', async () => {
+      const controller = new AbortController();
+      controller.abort();
+
+      const element = await waitForElement('.nonexistent', {
+        signal: controller.signal,
+      });
+
+      expect(element).toBeNull();
+    });
+
+    it('should filter with predicate', async () => {
+      document.body.innerHTML = `
+        <div class="item">First</div>
+        <div class="item">Second</div>
+      `;
+
+      const element = await waitForElement('.item', {
+        predicate: (el) => el.textContent === 'Second',
+      });
+
+      expect(element?.textContent).toBe('Second');
+    });
+  });
+
+  describe('observeElements', () => {
+    it('should be an async iterable', () => {
+      const iterable = observeElements('.target');
+
+      expect(Symbol.asyncIterator in iterable).toBe(true);
     });
   });
 });

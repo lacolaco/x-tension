@@ -2,62 +2,73 @@
  * Generic DOM Utilities
  *
  * Platform-agnostic utilities for DOM manipulation.
+ * Provides an anti-corruption layer over third-party DOM libraries.
  */
+
+import elementReady, { observeReadyElements } from 'element-ready';
+
+// =============================================================================
+// Types
+// =============================================================================
 
 /**
- * Watch for an element to appear in the DOM using MutationObserver.
- * Calls callback when element appears. With once=true, stops after first match.
+ * Options for waiting/observing DOM elements.
  */
-export function onElementAppear<T extends HTMLElement>(
-  selector: string | (() => T | null),
-  callback: (element: T) => void,
-  signal: AbortSignal,
-  options: { timeout?: number; once?: boolean } = {},
-): void {
-  const { timeout = 5000, once = false } = options;
-
-  if (signal.aborted) return;
-
-  const find = () => (typeof selector === 'string' ? document.querySelector<T>(selector) : selector());
-  // Prevent duplicate notifications for same element instance (defense against race conditions)
-  const seen = new WeakSet<T>();
-  let done = false;
-
-  function finish() {
-    if (done) return;
-    done = true;
-    if (timerId !== undefined) clearTimeout(timerId);
-    observer.disconnect();
-    signal.removeEventListener('abort', finish);
-  }
-
-  function notify(element: T) {
-    if (done || seen.has(element)) return;
-    seen.add(element);
-    try {
-      callback(element);
-    } catch (error) {
-      console.error('[x-tension] onElementAppear callback failed:', error);
-    }
-    if (once) finish();
-  }
-
-  const observer = new MutationObserver(() => {
-    const element = find();
-    if (element) notify(element);
-  });
-
-  // timeout=0 disables timeout (monitor until abort)
-  const timerId = timeout > 0 ? setTimeout(finish, timeout) : undefined;
-  signal.addEventListener('abort', finish, { once: true });
-
-  // Order matters: check existing → notify → start observer
-  // This ensures we don't miss elements that exist before observer starts,
-  // and WeakSet prevents duplicate notifications if observer fires for same element
-  const existing = find();
-  if (existing) notify(existing);
-  observer.observe(document.body, { childList: true, subtree: true });
+export interface WaitForElementOptions {
+  /** AbortSignal to cancel the operation */
+  signal?: AbortSignal;
+  /** Predicate to filter elements */
+  predicate?: (element: HTMLElement) => boolean;
 }
+
+// =============================================================================
+// Element Waiting (Anti-corruption layer for element-ready)
+// =============================================================================
+
+/**
+ * Wait for a single element matching the selector to appear in the DOM.
+ * Returns null if aborted or timed out.
+ */
+export async function waitForElement(
+  selector: string,
+  options: WaitForElementOptions = {},
+): Promise<HTMLElement | null> {
+  const element = await elementReady(selector, {
+    signal: options.signal,
+    stopOnDomReady: false,
+    predicate: options.predicate,
+  });
+  return element ?? null;
+}
+
+/**
+ * Observe elements matching the selector as they appear in the DOM.
+ * Yields existing matching elements first, then monitors for new ones.
+ * Use with for-await-of.
+ */
+export async function* observeElements(
+  selector: string,
+  options: WaitForElementOptions = {},
+): AsyncGenerator<HTMLElement> {
+  // Yield existing elements first (observeReadyElements only watches for new elements)
+  const existing = document.querySelectorAll<HTMLElement>(selector);
+  for (const el of existing) {
+    if (!options.predicate || options.predicate(el)) {
+      yield el;
+    }
+  }
+
+  // Then observe new elements
+  yield* observeReadyElements(selector, {
+    signal: options.signal,
+    stopOnDomReady: false,
+    predicate: options.predicate,
+  });
+}
+
+// =============================================================================
+// Style Injection
+// =============================================================================
 
 /**
  * Inject a style into the document head.

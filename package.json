@@ -1,8 +1,15 @@
 {
   "name": "x-tension",
-  "description": "Enhance your x.com experience",
+  "description": "Enhance your x.com experience with customizable features",
   "private": true,
   "version": "0.1.2",
+  "author": "lacolaco",
+  "license": "MIT",
+  "homepage": "https://github.com/lacolaco/x-tension",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lacolaco/x-tension.git"
+  },
   "type": "module",
   "packageManager": "pnpm@10.27.0",
   "scripts": {

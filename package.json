@@ -1,6 +1,6 @@
 {
-  "name": "wxt-starter",
-  "description": "manifest.json description",
+  "name": "x-tension",
+  "description": "Enhance your x.com experience",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,15 +12,27 @@
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
     "compile": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
     "@analogjs/vite-plugin-angular": "^2.2.1",
     "@angular/build": "^21.0.4",
     "@angular/compiler-cli": "^21.0.6",
+    "@eslint/js": "^9.39.2",
     "@tailwindcss/vite": "^4.1.18",
+    "@vitest/coverage-v8": "^4.0.16",
+    "angular-eslint": "^21.1.0",
+    "eslint": "^9.39.2",
+    "jsdom": "^27.4.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.52.0",
+    "vitest": "^4.0.16",
     "wxt": "^0.20.6"
   },
   "dependencies": {

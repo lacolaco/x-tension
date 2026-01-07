@@ -94,3 +94,21 @@ MCPが利用可能な場合は必ずそちらを優先し、ハードコード�
 - Record target environment explicitly in todo or notes
 - Verify environment before running build/test commands
 - Never rely on "default environment" assumptions
+
+### Anti-corruption Layer Protocol
+**Apply when**: Wrapping external libraries to create anti-corruption layers
+- After creating wrapper functions, verify behavior matches original usage
+- For iterator/generator APIs: explicitly test handling of existing items vs new items
+- Never assume pass-through is safe; verify expected behavior at call sites
+
+### CSS-First Visibility Control
+**Apply when**: Controlling element visibility via JavaScript DOM manipulation
+- CSS provides instant effect; JS always has latency (FOUC risk)
+- For immediate visibility needs: CSS first, JS as supplement
+- Defense in depth: CSS (instant) + JS observation (for dynamic changes)
+
+### AsyncIterable/Observer API Verification
+**Apply when**: Using AsyncIterable, AsyncGenerator, or MutationObserver-based APIs
+- Verify: Does it yield existing items immediately, or only new items?
+- Verify: What happens on initialization timing edge cases?
+- If documentation is unclear, write test code to verify actual behavior

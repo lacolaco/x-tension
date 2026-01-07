@@ -11,7 +11,12 @@ export default defineConfig({
     browser_specific_settings: {
       gecko: {
         id: '{1557cd86-ae55-4b95-9a18-0af1aed65684}',
-      },
+        // Required for Firefox extensions - declares no data collection
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data_collection_permissions: {
+          required: ['none'],
+        },
+      } as Record<string, unknown>,
     },
   },
   vite: () => ({

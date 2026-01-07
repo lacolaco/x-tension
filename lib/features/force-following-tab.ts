@@ -6,7 +6,7 @@
  */
 
 import type { Observable } from 'rxjs';
-import { onElementAppear, injectStyle, queryAll } from '../dom-utils';
+import { injectStyle, observeElements, queryAll, waitForElement } from '../dom-utils';
 import { Selectors, TextPatterns } from '../x-com/selectors';
 
 // =============================================================================
@@ -36,21 +36,11 @@ export function isForYouTab(tab: HTMLElement): boolean {
 // Core Logic
 // =============================================================================
 
-function findFollowingTab(): HTMLElement | null {
-  const tabs = queryAll(document, Selectors.tab);
-  return tabs.find(isFollowingTab) ?? null;
-}
-
-function findForYouTab(): HTMLElement | null {
-  const tabs = queryAll(document, Selectors.tab);
-  return tabs.find(isForYouTab) ?? null;
-}
-
 /**
  * Click Following tab and select "Latest" from the dropdown menu.
  * Menu stays hidden permanently (user won't manually change sort order).
  */
-function selectLatestFromMenu(followingTab: HTMLElement, signal: AbortSignal): void {
+async function selectLatestFromMenu(followingTab: HTMLElement, signal: AbortSignal): Promise<void> {
   // Hide menu permanently - no cleanup needed
   injectStyle(
     'x-tension-hide-menu',
@@ -59,50 +49,44 @@ function selectLatestFromMenu(followingTab: HTMLElement, signal: AbortSignal): v
 
   followingTab.click();
 
-  // MutationObserver catches newly appeared menu (scoped by timing after click)
-  onElementAppear(
-    Selectors.menu,
-    (menu) => {
-      const menuItems = queryAll(menu, Selectors.menuItem);
-      const latestOption = menuItems.find((item) => TextPatterns.latest.test(item.textContent || ''));
-      if (!latestOption) {
-        console.warn('[x-tension] Latest option not found in menu');
-        return;
-      }
-      latestOption.click();
-    },
-    signal,
-    { timeout: Timing.MENU_TIMEOUT, once: true },
-  );
+  const menu = await waitForElement(Selectors.menu, {
+    signal: AbortSignal.any([signal, AbortSignal.timeout(Timing.MENU_TIMEOUT)]),
+  });
+  if (!menu) return;
+
+  const menuItems = queryAll(menu, Selectors.menuItem);
+  const latestOption = menuItems.find((item) => TextPatterns.latest.test(item.textContent || ''));
+  if (!latestOption) {
+    console.warn('[x-tension] Latest option not found in menu');
+    return;
+  }
+  latestOption.click();
 }
 
-function activateFollowingTab(signal: AbortSignal): void {
-  onElementAppear(
-    findFollowingTab,
-    (followingTab) => {
-      selectLatestFromMenu(followingTab, signal);
-    },
-    signal,
-    { timeout: Timing.TAB_TIMEOUT, once: true },
-  );
+async function activateFollowingTab(signal: AbortSignal): Promise<void> {
+  const followingTab = await waitForElement(Selectors.tab, {
+    signal: AbortSignal.any([signal, AbortSignal.timeout(Timing.TAB_TIMEOUT)]),
+    predicate: (el) => isFollowingTab(el),
+  });
+  if (!followingTab) return;
+
+  await selectLatestFromMenu(followingTab, signal);
 }
 
 /**
  * Continuously hide "For You" tab.
- * Uses timeout: 0 for indefinite monitoring because tab can be re-rendered by SPA.
+ * Monitors indefinitely because tab can be re-rendered by SPA.
  */
-function hideForYouTab(signal: AbortSignal): void {
-  onElementAppear(
-    findForYouTab,
-    (forYouTab) => {
-      // Hide the wrapper element (not just tab) to avoid empty space
-      const wrapper = forYouTab.parentElement?.closest<HTMLElement>(Selectors.tabWrapper);
-      const target = wrapper ?? forYouTab;
-      target.style.display = 'none';
-    },
+async function hideForYouTab(signal: AbortSignal): Promise<void> {
+  for await (const forYouTab of observeElements(Selectors.tab, {
     signal,
-    { timeout: 0 },
-  );
+    predicate: (el) => isForYouTab(el),
+  })) {
+    // Hide the wrapper element (not just tab) to avoid empty space
+    const wrapper = forYouTab.parentElement?.closest<HTMLElement>(Selectors.tabWrapper);
+    const target = wrapper ?? forYouTab;
+    target.style.display = 'none';
+  }
 }
 
 // =============================================================================
@@ -125,10 +109,24 @@ export function initForceFollowingTab(navigation$: Observable<string>): () => vo
       return;
     }
 
-    // Start new operations for /home
+    // Start new operations for /home (fire-and-forget, abort handles cleanup)
     abortController = new AbortController();
-    hideForYouTab(abortController.signal); // Continuous monitoring
-    activateFollowingTab(abortController.signal); // One-shot activation
+
+    // Immediately hide first tab via CSS (For You tab is always first on /home)
+    // This prevents flash of unstyled content before JS runs
+    injectStyle(
+      'x-tension-hide-foryou-tab',
+      `${Selectors.tabList} > ${Selectors.tabWrapper}:first-child { display: none !important; }`,
+    );
+
+    // Continuous monitoring (errors handled by abort, intentionally ignored)
+    hideForYouTab(abortController.signal).catch(() => {
+      // Abort errors are expected and intentionally swallowed
+    });
+    // One-shot activation (errors handled by abort, intentionally ignored)
+    activateFollowingTab(abortController.signal).catch(() => {
+      // Abort errors are expected and intentionally swallowed
+    });
   });
 
   return () => {

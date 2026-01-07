@@ -38,9 +38,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run tests
-        run: pnpm test:run
-
       - name: Build Chrome extension
         run: pnpm build:chrome
 

@@ -8,7 +8,6 @@ export default defineConfig({
     name: 'x-tension',
     short_name: 'x-tension',
     description: 'Enhance your x.com experience with customizable features',
-    author: { email: 'suguru.inatomi@gmail.com' },
     homepage_url: 'https://github.com/lacolaco/x-tension',
     permissions: ['storage', 'webNavigation'],
     browser_specific_settings: {

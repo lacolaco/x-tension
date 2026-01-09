@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/lacolaco/x-tension/compare/v0.2.0...v0.2.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* resolve sidebar menu and autocomplete issues ([#19](https://github.com/lacolaco/x-tension/issues/19)) ([867d919](https://github.com/lacolaco/x-tension/commit/867d919b1df7a57935b19c8d9642fc3a8fa7cd34))
+
 ## [0.2.0](https://github.com/lacolaco/x-tension/compare/v0.1.4...v0.2.0) (2026-01-09)
 
 

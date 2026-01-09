@@ -6,7 +6,7 @@
  */
 
 import type { Observable } from 'rxjs';
-import { injectStyle, observeElements, queryAll, waitForElement } from '../dom-utils';
+import { injectStyle, queryAll, waitForElement } from '../dom-utils';
 import { Selectors, TextPatterns } from '../x-com/selectors';
 
 // =============================================================================
@@ -38,29 +38,33 @@ export function isForYouTab(tab: HTMLElement): boolean {
 
 /**
  * Click Following tab and select "Latest" from the dropdown menu.
- * Menu stays hidden permanently (user won't manually change sort order).
+ * Menu hidden only during operation to avoid affecting search autocomplete.
  */
 async function selectLatestFromMenu(followingTab: HTMLElement, signal: AbortSignal): Promise<void> {
-  // Hide menu permanently - no cleanup needed
-  injectStyle(
+  // Scope to primaryColumn to avoid sidebar menus; remove after operation to avoid autocomplete issues
+  const styleEl = injectStyle(
     'x-tension-hide-menu',
-    `${Selectors.menu} { opacity: 0 !important; pointer-events: none !important; }`,
+    `${Selectors.primaryColumn} ${Selectors.menu} { opacity: 0 !important; pointer-events: none !important; }`,
   );
 
-  followingTab.click();
+  try {
+    followingTab.click();
 
-  const menu = await waitForElement(Selectors.menu, {
-    signal: AbortSignal.any([signal, AbortSignal.timeout(Timing.MENU_TIMEOUT)]),
-  });
-  if (!menu) return;
+    const menu = await waitForElement(Selectors.menu, {
+      signal: AbortSignal.any([signal, AbortSignal.timeout(Timing.MENU_TIMEOUT)]),
+    });
+    if (!menu) return;
 
-  const menuItems = queryAll(menu, Selectors.menuItem);
-  const latestOption = menuItems.find((item) => TextPatterns.latest.test(item.textContent || ''));
-  if (!latestOption) {
-    console.warn('[x-tension] Latest option not found in menu');
-    return;
+    const menuItems = queryAll(menu, Selectors.menuItem);
+    const latestOption = menuItems.find((item) => TextPatterns.latest.test(item.textContent || ''));
+    if (!latestOption) {
+      console.warn('[x-tension] Latest option not found in menu');
+      return;
+    }
+    latestOption.click();
+  } finally {
+    styleEl.remove();
   }
-  latestOption.click();
 }
 
 async function activateFollowingTab(signal: AbortSignal): Promise<void> {
@@ -73,21 +77,6 @@ async function activateFollowingTab(signal: AbortSignal): Promise<void> {
   await selectLatestFromMenu(followingTab, signal);
 }
 
-/**
- * Continuously hide "For You" tab.
- * Monitors indefinitely because tab can be re-rendered by SPA.
- */
-async function hideForYouTab(signal: AbortSignal): Promise<void> {
-  for await (const forYouTab of observeElements(Selectors.tab, {
-    signal,
-    predicate: (el) => isForYouTab(el),
-  })) {
-    // Hide the wrapper element (not just tab) to avoid empty space
-    const wrapper = forYouTab.parentElement?.closest<HTMLElement>(Selectors.tabWrapper);
-    const target = wrapper ?? forYouTab;
-    target.style.display = 'none';
-  }
-}
 
 // =============================================================================
 // Entry Point
@@ -112,17 +101,12 @@ export function initForceFollowingTab(navigation$: Observable<string>): () => vo
     // Start new operations for /home (fire-and-forget, abort handles cleanup)
     abortController = new AbortController();
 
-    // Immediately hide first tab via CSS (For You tab is always first on /home)
-    // This prevents flash of unstyled content before JS runs
+    // Hide For You tab via CSS (always first tab on /home)
     injectStyle(
       'x-tension-hide-foryou-tab',
       `${Selectors.tabList} > ${Selectors.tabWrapper}:first-child { display: none !important; }`,
     );
 
-    // Continuous monitoring (errors handled by abort, intentionally ignored)
-    hideForYouTab(abortController.signal).catch(() => {
-      // Abort errors are expected and intentionally swallowed
-    });
     // One-shot activation (errors handled by abort, intentionally ignored)
     activateFollowingTab(abortController.signal).catch(() => {
       // Abort errors are expected and intentionally swallowed

@@ -76,10 +76,12 @@ function escapeCSSValue(value: string): string {
 /**
  * Generate selector to hide Premium subscription section.
  * Target parent div to remove border/frame.
+ * Excludes elements containing search input to avoid hiding search box.
  */
 function generatePremiumSelectors(sidebarSelector: string): string[] {
   return SidebarAriaLabels.premium.map(
-    (label) => `${sidebarSelector} div:has(aside[aria-label="${escapeCSSValue(label)}"])`,
+    (label) =>
+      `${sidebarSelector} div:has(aside[aria-label="${escapeCSSValue(label)}"]):not(:has(${Selectors.searchInput}))`,
   );
 }
 
@@ -89,7 +91,8 @@ function generatePremiumSelectors(sidebarSelector: string): string[] {
  */
 function generateWhoToFollowSelectors(sidebarSelector: string): string[] {
   return SidebarAriaLabels.whoToFollow.map(
-    (label) => `${sidebarSelector} div:has(aside[aria-label="${escapeCSSValue(label)}"])`,
+    (label) =>
+      `${sidebarSelector} div:has(aside[aria-label="${escapeCSSValue(label)}"]):not(:has(${Selectors.searchInput}))`,
   );
 }
 
@@ -110,7 +113,8 @@ function generateNewsSelectors(sidebarSelector: string): string[] {
  */
 function generateTrendsSelectors(sidebarSelector: string): string[] {
   return SidebarAriaLabels.trends.map(
-    (label) => `${sidebarSelector} section:has([aria-label="${escapeCSSValue(label)}"])`,
+    (label) =>
+      `${sidebarSelector} section:has([aria-label="${escapeCSSValue(label)}"]):not(:has(${Selectors.searchInput}))`,
   );
 }
 

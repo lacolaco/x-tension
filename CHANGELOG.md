@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/lacolaco/x-tension/compare/v0.1.4...v0.2.0) (2026-01-09)
+
+
+### Features
+
+* add hide-sidebar-sections feature ([#17](https://github.com/lacolaco/x-tension/issues/17)) ([e4d5ecd](https://github.com/lacolaco/x-tension/commit/e4d5ecdfc703adcc5432f12c9aa49ef8a3a66d20))
+
 ## [0.1.4](https://github.com/lacolaco/x-tension/compare/v0.1.3...v0.1.4) (2026-01-07)
 
 

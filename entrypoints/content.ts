@@ -1,6 +1,7 @@
 import { Observable } from 'rxjs';
 import { getFeatureFlags, watchFeatureFlags } from '../lib/storage';
 import { initForceFollowingTab } from '../lib/features/force-following-tab';
+import { initHideSidebarSections } from '../lib/features/hide-sidebar-sections';
 
 const navigation$ = new Observable<string>((subscriber) => {
   subscriber.next(location.pathname);
@@ -29,8 +30,15 @@ export default defineContentScript({
       initForceFollowingTab(navigation$);
     }
 
+    if (flags.hideSidebarSections) {
+      initHideSidebarSections();
+    }
+
     watchFeatureFlags((newFlags, oldFlags) => {
-      if (newFlags.forceFollowingLatest !== oldFlags.forceFollowingLatest) {
+      if (
+        newFlags.forceFollowingLatest !== oldFlags.forceFollowingLatest ||
+        newFlags.hideSidebarSections !== oldFlags.hideSidebarSections
+      ) {
         location.reload();
       }
     });

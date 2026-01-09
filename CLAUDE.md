@@ -112,3 +112,48 @@ MCPが利用可能な場合は必ずそちらを優先し、ハードコード�
 - Verify: Does it yield existing items immediately, or only new items?
 - Verify: What happens on initialization timing edge cases?
 - If documentation is unclear, write test code to verify actual behavior
+
+### DOM Structure Investigation Protocol
+**Apply when**: Designing DOM selectors or implementing DOM manipulation features
+- NEVER guess DOM structure; always measure
+- Ask user to run investigation script in browser DevTools
+- Design selectors based on measured data only
+
+### Plan Mode Protocol
+**Apply when**: Using EnterPlanMode/ExitPlanMode
+- ExitPlanMode = "requesting approval", NOT "permission to implement"
+- Write detailed design (concrete code changes) to plan file BEFORE ExitPlanMode
+- Plan files go in `plans/` directory with sequential numbering (e.g., `002-feature-name.md`)
+- Wait for explicit user approval after ExitPlanMode before writing any code
+
+### Consistency Check
+**Apply when**: Drawing conclusions or making recommendations
+- Before concluding, verify no contradiction with previously stated concerns/constraints
+- If contradicting earlier points, explicitly explain why the earlier concern no longer applies
+- Never silently drop or forget constraints mentioned earlier in the conversation
+
+### WXT Build vs Dev Protocol
+**Apply when**: After implementing features, before user verification
+- `pnpm dev` / `pnpm dev:firefox`: Launches browser with extension (AI execution meaningless)
+- `pnpm build` / `pnpm build:firefox`: Generates artifacts in `.output/` (for user verification)
+- After implementation: Run build command, then ask user to load extension in browser for verification
+
+### CSS :has() Selector Caution
+**Apply when**: Using CSS `:has()` pseudo-class for parent selection
+- `:has(selector)` = searches ALL descendants (matches broadly, including grandparents)
+- `:has(> selector)` = searches DIRECT children only (narrow match)
+- ALWAYS consider: "Will this match unintended ancestor elements?"
+- Test selector scope in DevTools BEFORE building
+
+### DOM Investigation Efficiency
+**Apply when**: Investigating DOM structure for selector design
+- **DO NOT** run multiple small scripts incrementally
+- **DO** request `element.outerHTML` to get full structure at once
+- **DO NOT** use `console.table()` (output gets truncated)
+- **DO** use `console.log()` for reliable output
+
+### CSS Selector Validation Protocol
+**Apply when**: Implementing CSS-based DOM manipulation
+- Before build: Ask user to run `document.querySelector(selector)` in DevTools
+- Build complex selectors incrementally (simple → complex)
+- Verify no unintended elements match before proceeding

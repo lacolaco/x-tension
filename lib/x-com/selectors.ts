@@ -72,3 +72,12 @@ export const SidebarTestIds = {
   /** News/Today's news section */
   news: 'news_sidebar',
 } as const;
+
+/**
+ * Navigation item hrefs (locale-independent).
+ * Used by: hide-nav-items
+ */
+export const NavItemHrefs = {
+  grok: '/i/grok',
+  premium: '/i/premium_sign_up',
+} as const;

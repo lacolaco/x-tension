@@ -28,6 +28,15 @@ import { getFeatureFlags, setFeatureFlags } from '../../lib/storage';
           />
           <span class="text-sm text-gray-200">右サイドバーを簡素化</span>
         </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            class="w-4 h-4 accent-blue-500"
+            [checked]="hideNavItems()"
+            (change)="toggleHideNavItems()"
+          />
+          <span class="text-sm text-gray-200">左ナビを簡素化</span>
+        </label>
       </div>
 
       <p class="text-xs text-gray-500">
@@ -43,6 +52,7 @@ export class AppComponent {
 
   readonly forceFollowingLatest = linkedSignal(() => this.flagsResource.value()?.forceFollowingLatest ?? true);
   readonly hideSidebarSections = linkedSignal(() => this.flagsResource.value()?.hideSidebarSections ?? true);
+  readonly hideNavItems = linkedSignal(() => this.flagsResource.value()?.hideNavItems ?? true);
 
   toggleForceFollowingLatest(): void {
     const newValue = !this.forceFollowingLatest();
@@ -61,6 +71,16 @@ export class AppComponent {
     setFeatureFlags({ hideSidebarSections: newValue }).catch((err: unknown) => {
       console.error('Failed to save settings:', err);
       this.hideSidebarSections.set(!newValue);
+    });
+  }
+
+  toggleHideNavItems(): void {
+    const newValue = !this.hideNavItems();
+    this.hideNavItems.set(newValue);
+
+    setFeatureFlags({ hideNavItems: newValue }).catch((err: unknown) => {
+      console.error('Failed to save settings:', err);
+      this.hideNavItems.set(!newValue);
     });
   }
 }

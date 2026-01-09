@@ -2,6 +2,7 @@ import { Observable } from 'rxjs';
 import { getFeatureFlags, watchFeatureFlags } from '../lib/storage';
 import { initForceFollowingTab } from '../lib/features/force-following-tab';
 import { initHideSidebarSections } from '../lib/features/hide-sidebar-sections';
+import { initHideNavItems } from '../lib/features/hide-nav-items';
 
 const navigation$ = new Observable<string>((subscriber) => {
   subscriber.next(location.pathname);
@@ -34,10 +35,15 @@ export default defineContentScript({
       initHideSidebarSections();
     }
 
+    if (flags.hideNavItems) {
+      initHideNavItems();
+    }
+
     watchFeatureFlags((newFlags, oldFlags) => {
       if (
         newFlags.forceFollowingLatest !== oldFlags.forceFollowingLatest ||
-        newFlags.hideSidebarSections !== oldFlags.hideSidebarSections
+        newFlags.hideSidebarSections !== oldFlags.hideSidebarSections ||
+        newFlags.hideNavItems !== oldFlags.hideNavItems
       ) {
         location.reload();
       }

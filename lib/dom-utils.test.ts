@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { queryAll, query, waitForElement, observeElements } from './dom-utils';
+import { queryAll, query, waitForElement } from './dom-utils';
 
 describe('dom-utils', () => {
   beforeEach(() => {
@@ -90,11 +90,4 @@ describe('dom-utils', () => {
     });
   });
 
-  describe('observeElements', () => {
-    it('should be an async iterable', () => {
-      const iterable = observeElements('.target');
-
-      expect(Symbol.asyncIterator in iterable).toBe(true);
-    });
-  });
 });

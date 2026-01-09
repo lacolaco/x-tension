@@ -5,7 +5,7 @@
  * Provides an anti-corruption layer over third-party DOM libraries.
  */
 
-import elementReady, { observeReadyElements } from 'element-ready';
+import elementReady from 'element-ready';
 
 // =============================================================================
 // Types
@@ -39,31 +39,6 @@ export async function waitForElement(
     predicate: options.predicate,
   });
   return element ?? null;
-}
-
-/**
- * Observe elements matching the selector as they appear in the DOM.
- * Yields existing matching elements first, then monitors for new ones.
- * Use with for-await-of.
- */
-export async function* observeElements(
-  selector: string,
-  options: WaitForElementOptions = {},
-): AsyncGenerator<HTMLElement> {
-  // Yield existing elements first (observeReadyElements only watches for new elements)
-  const existing = document.querySelectorAll<HTMLElement>(selector);
-  for (const el of existing) {
-    if (!options.predicate || options.predicate(el)) {
-      yield el;
-    }
-  }
-
-  // Then observe new elements
-  yield* observeReadyElements(selector, {
-    signal: options.signal,
-    stopOnDomReady: false,
-    predicate: options.predicate,
-  });
 }
 
 // =============================================================================

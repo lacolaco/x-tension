@@ -1,9 +1,11 @@
 export interface FeatureFlags {
   forceFollowingLatest: boolean;
+  hideSidebarSections: boolean;
 }
 
 const defaultFlags: FeatureFlags = {
   forceFollowingLatest: true,
+  hideSidebarSections: true,
 };
 
 const STORAGE_KEY = 'featureFlags';
@@ -13,7 +15,9 @@ function isFeatureFlags(value: unknown): value is FeatureFlags {
     typeof value === 'object' &&
     value !== null &&
     'forceFollowingLatest' in value &&
-    typeof (value as Record<string, unknown>).forceFollowingLatest === 'boolean'
+    typeof (value as Record<string, unknown>).forceFollowingLatest === 'boolean' &&
+    'hideSidebarSections' in value &&
+    typeof (value as Record<string, unknown>).hideSidebarSections === 'boolean'
   );
 }
 

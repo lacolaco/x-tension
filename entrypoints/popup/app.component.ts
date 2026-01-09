@@ -19,6 +19,15 @@ import { getFeatureFlags, setFeatureFlags } from '../../lib/storage';
           />
           <span class="text-sm text-gray-200">フォロー中（最新）に固定</span>
         </label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            class="w-4 h-4 accent-blue-500"
+            [checked]="hideSidebarSections()"
+            (change)="toggleHideSidebarSections()"
+          />
+          <span class="text-sm text-gray-200">右サイドバーを簡素化</span>
+        </label>
       </div>
 
       <p class="text-xs text-gray-500">
@@ -33,6 +42,7 @@ export class AppComponent {
   });
 
   readonly forceFollowingLatest = linkedSignal(() => this.flagsResource.value()?.forceFollowingLatest ?? true);
+  readonly hideSidebarSections = linkedSignal(() => this.flagsResource.value()?.hideSidebarSections ?? true);
 
   toggleForceFollowingLatest(): void {
     const newValue = !this.forceFollowingLatest();
@@ -40,8 +50,17 @@ export class AppComponent {
 
     setFeatureFlags({ forceFollowingLatest: newValue }).catch((err: unknown) => {
       console.error('Failed to save settings:', err);
-      // Revert UI state on error
       this.forceFollowingLatest.set(!newValue);
+    });
+  }
+
+  toggleHideSidebarSections(): void {
+    const newValue = !this.hideSidebarSections();
+    this.hideSidebarSections.set(newValue);
+
+    setFeatureFlags({ hideSidebarSections: newValue }).catch((err: unknown) => {
+      console.error('Failed to save settings:', err);
+      this.hideSidebarSections.set(!newValue);
     });
   }
 }

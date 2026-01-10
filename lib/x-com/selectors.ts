@@ -71,6 +71,8 @@ export const SidebarAriaLabels = {
 export const SidebarTestIds = {
   /** News/Today's news section */
   news: 'news_sidebar',
+  /** Live broadcast / "Live on X" section */
+  liveBroadcast: 'placementTracking',
 } as const;
 
 /**

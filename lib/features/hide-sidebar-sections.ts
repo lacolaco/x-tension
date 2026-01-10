@@ -6,6 +6,7 @@
  * - Who to follow
  * - Today's News
  * - Trending now
+ * - Live on X (live broadcast)
  *
  * Uses CSS-First approach for instant hiding (prevents FOUC).
  *
@@ -119,6 +120,16 @@ function generateTrendsSelectors(sidebarSelector: string): string[] {
 }
 
 /**
+ * Generate selector to hide Live broadcast section.
+ * Uses data-testid (locale-independent).
+ */
+function generateLiveBroadcastSelectors(sidebarSelector: string): string[] {
+  return [
+    `${sidebarSelector} div:has([data-testid="${SidebarTestIds.liveBroadcast}"]):not(:has(${Selectors.searchInput}))`,
+  ];
+}
+
+/**
  * Generate complete CSS to hide all sidebar sections.
  */
 function generateHideCSS(): string {
@@ -129,6 +140,7 @@ function generateHideCSS(): string {
     ...generateWhoToFollowSelectors(sb),
     ...generateNewsSelectors(sb),
     ...generateTrendsSelectors(sb),
+    ...generateLiveBroadcastSelectors(sb),
   ];
 
   return `${allSelectors.join(',\n')} {\n  display: none !important;\n}`;

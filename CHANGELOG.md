@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/lacolaco/x-tension/compare/v0.2.1...v0.3.0) (2026-01-10)
+
+
+### Features
+
+* add hide-nav-items feature ([#21](https://github.com/lacolaco/x-tension/issues/21)) ([b67bfa8](https://github.com/lacolaco/x-tension/commit/b67bfa833d36361fe108f9a0590599780bd6ef0c))
+* **hide-sidebar:** add Live on X section hiding ([#27](https://github.com/lacolaco/x-tension/issues/27)) ([1fa7196](https://github.com/lacolaco/x-tension/commit/1fa7196798d7b4534a5fb2b84cc0a36ce6b1baa5))
+
 ## [0.2.1](https://github.com/lacolaco/x-tension/compare/v0.2.0...v0.2.1) (2026-01-09)
 
 

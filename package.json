@@ -58,7 +58,7 @@
       "esbuild"
     ],
     "overrides": {
-      "vite": "^7.3.0"
+      "vite": "^7.3.2"
     }
   }
 }

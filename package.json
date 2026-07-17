@@ -11,7 +11,7 @@
     "url": "https://github.com/lacolaco/x-tension.git"
   },
   "type": "module",
-  "packageManager": "pnpm@10.27.0",
+  "packageManager": "pnpm@10.34.5",
   "scripts": {
     "dev:chrome": "wxt",
     "dev:firefox": "wxt -b firefox",
